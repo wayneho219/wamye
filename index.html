@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大阪・京都 2026｜0429–0505</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────── -->
+<header>
+  <h1>🗾 大阪・京都</h1>
+  <p>2026 年 4 月 29 日 — 5 月 5 日</p>
+  <div class="header-meta">
+    <span class="meta-pill">7 天 6 夜</span>
+    <span class="meta-pill">有馬 → 姬路 → 大阪 → 奈良 → 京都</span>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="globalProgress" style="width:0%"></div>
+  </div>
+</header>
+
+<!-- ── 分頁列 ──────────────────────────────────────────────── -->
+<nav class="tab-bar">
+  <button class="tab-btn" data-tab="overview">總覽</button>
+  <button class="tab-btn" data-tab="day1">Day 1<span class="day-date">4/29 有馬</span></button>
+  <button class="tab-btn" data-tab="day2">Day 2<span class="day-date">4/30 姬路</span></button>
+  <button class="tab-btn" data-tab="day3">Day 3<span class="day-date">5/1 大阪</span></button>
+  <button class="tab-btn" data-tab="day4">Day 4<span class="day-date">5/2 奈良</span></button>
+  <button class="tab-btn" data-tab="day5">Day 5<span class="day-date">5/3 京都</span></button>
+  <button class="tab-btn" data-tab="day6">Day 6<span class="day-date">5/4 大阪</span></button>
+  <button class="tab-btn" data-tab="day7">Day 7<span class="day-date">5/5 返台</span></button>
+</nav>
+
+<!-- ── 總覽頁 ──────────────────────────────────────────────── -->
+<div id="view-overview" class="view">
+
+  <div class="overview-grid">
+    <div class="stat-card">
+      <div class="stat-val" id="stat-total">—</div>
+      <div class="stat-lbl">目前總費用 (TWD)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-done">0%</div>
+      <div class="stat-lbl">行程完成度</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">7</div>
+      <div class="stat-lbl">天數</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-items">—</div>
+      <div class="stat-lbl">行程項目數</div>
+    </div>
+  </div>
+
+  <!-- 費用分類 -->
+  <div class="section-header">費用分類</div>
+  <div class="budget-list">
+    <div class="budget-row">
+      <span class="lbl"><span class="budget-dot" style="background:var(--tag-transport)"></span>交通</span>
+      <span class="amt" id="b-交通">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl"><span class="budget-dot" style="background:var(--tag-hotel)"></span>住宿</span>
+      <span class="amt" id="b-住宿">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl"><span class="budget-dot" style="background:var(--tag-sight)"></span>景點</span>
+      <span class="amt" id="b-景點">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl"><span class="budget-dot" style="background:var(--tag-food)"></span>餐飲</span>
+      <span class="amt" id="b-餐飲">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl"><span class="budget-dot" style="background:var(--tag-shop)"></span>購物</span>
+      <span class="amt" id="b-購物">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl"><span class="budget-dot" style="background:var(--tag-souvenir)"></span>伴手禮</span>
+      <span class="amt" id="b-伴手禮">—</span>
+    </div>
+    <div class="budget-total">
+      <span>已知總費用</span>
+      <span id="b-total">—</span>
+    </div>
+  </div>
+
+  <!-- 個人費用 -->
+  <div class="section-header">個人費用</div>
+  <div class="budget-list">
+    <div class="budget-row">
+      <span class="lbl">
+        <span class="budget-dot" style="background:#999"></span>兩人共同
+      </span>
+      <span class="amt" id="b-both">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl">
+        <span class="budget-dot" style="background:var(--wewei)"></span>為為
+      </span>
+      <span class="amt" id="b-wewei">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl">
+        <span class="budget-dot" style="background:var(--lingling)"></span>翎翎
+      </span>
+      <span class="amt" id="b-lingling">—</span>
+    </div>
+  </div>
+
+  <!-- 每日總覽 -->
+  <div class="section-header">每日總覽</div>
+  <div class="day-summary-list">
+    <div class="day-row" data-tab="day1">
+      <div class="day-dot">4/29</div>
+      <div class="day-row-body">
+        <div class="day-row-title">Day 1 — 有馬溫泉</div>
+        <div class="day-row-sub">台灣出發 → 關西機場 → 有馬溫泉</div>
+      </div>
+      <div class="day-row-right">
+        <span class="day-row-amt" id="day-amt-day1"></span>
+        <span class="day-row-chevron">›</span>
+      </div>
+    </div>
+    <div class="day-row" data-tab="day2">
+      <div class="day-dot">4/30</div>
+      <div class="day-row-body">
+        <div class="day-row-title">Day 2 — 姬路</div>
+        <div class="day-row-sub">有馬溫泉 → 姬路城 → 姬路住宿</div>
+      </div>
+      <div class="day-row-right">
+        <span class="day-row-amt" id="day-amt-day2"></span>
+        <span class="day-row-chevron">›</span>
+      </div>
+    </div>
+    <div class="day-row" data-tab="day3">
+      <div class="day-dot">5/1</div>
+      <div class="day-row-body">
+        <div class="day-row-title">Day 3 — 大阪</div>
+        <div class="day-row-sub">姬路 → 大阪 難波・心齋橋</div>
+      </div>
+      <div class="day-row-right">
+        <span class="day-row-amt" id="day-amt-day3"></span>
+        <span class="day-row-chevron">›</span>
+      </div>
+    </div>
+    <div class="day-row" data-tab="day4">
+      <div class="day-dot">5/2</div>
+      <div class="day-row-body">
+        <div class="day-row-title">Day 4 — 奈良</div>
+        <div class="day-row-sub">東大寺・若草山・宇治</div>
+      </div>
+      <div class="day-row-right">
+        <span class="day-row-amt" id="day-amt-day4"></span>
+        <span class="day-row-chevron">›</span>
+      </div>
+    </div>
+    <div class="day-row" data-tab="day5">
+      <div class="day-dot">5/3</div>
+      <div class="day-row-body">
+        <div class="day-row-title">Day 5 — 京都</div>
+        <div class="day-row-sub">京とれいん → 下鴨神社・鴨川</div>
+      </div>
+      <div class="day-row-right">
+        <span class="day-row-amt" id="day-amt-day5"></span>
+        <span class="day-row-chevron">›</span>
+      </div>
+    </div>
+    <div class="day-row" data-tab="day6">
+      <div class="day-dot">5/4</div>
+      <div class="day-row-body">
+        <div class="day-row-title">Day 6 — 大阪</div>
+        <div class="day-row-sub">勝尾寺・梅田</div>
+      </div>
+      <div class="day-row-right">
+        <span class="day-row-amt" id="day-amt-day6"></span>
+        <span class="day-row-chevron">›</span>
+      </div>
+    </div>
+    <div class="day-row" data-tab="day7">
+      <div class="day-dot">5/5</div>
+      <div class="day-row-body">
+        <div class="day-row-title">Day 7 — 返台</div>
+        <div class="day-row-sub">難波 → 關西機場 → 台灣</div>
+      </div>
+      <div class="day-row-right">
+        <span class="day-row-amt" id="day-amt-day7"></span>
+        <span class="day-row-chevron">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 備忘記事 -->
+  <div class="section-header">備忘記事</div>
+  <div class="notes-section">
+    <textarea id="globalNotes" placeholder="記下任何備忘事項…"></textarea>
+  </div>
+
+</div><!-- /view-overview -->
+
+<!-- ── 行程日頁（JS 動態生成）──────────────────────────────── -->
+<div id="view-day1" class="view day-view"></div>
+<div id="view-day2" class="view day-view"></div>
+<div id="view-day3" class="view day-view"></div>
+<div id="view-day4" class="view day-view"></div>
+<div id="view-day5" class="view day-view"></div>
+<div id="view-day6" class="view day-view"></div>
+<div id="view-day7" class="view day-view"></div>
+
+<!-- ── 浮動完成度 ──────────────────────────────────────────── -->
+<div class="float-progress" id="floatProgress"></div>
+
+<!-- ================================================================
+     金額 + 誰付 Modal
+     ================================================================ -->
+<div class="modal-overlay" id="amountModal" role="dialog" aria-modal="true">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">編輯金額</div>
+    <div class="modal-item-name" id="modal-item-name"></div>
+
+    <!-- 幣別 -->
+    <div class="currency-toggle">
+      <button class="cur-btn active" id="btn-twd">🇹🇼 台幣 TWD</button>
+      <button class="cur-btn" id="btn-jpy">🇯🇵 日幣 JPY</button>
+    </div>
+
+    <!-- 金額輸入 -->
+    <div class="input-row">
+      <span class="modal-cur-prefix" id="modal-cur-prefix">NT$</span>
+      <input type="number" id="modal-input" data-cur="TWD"
+             inputmode="decimal" placeholder="0" min="0" step="1">
+    </div>
+    <div class="modal-hint" id="modal-hint"></div>
+
+    <!-- 誰付 -->
+    <div class="who-label">誰的費用</div>
+    <div class="who-toggle">
+      <button class="who-btn active" data-who="both"     id="who-both">🤝 兩人</button>
+      <button class="who-btn"        data-who="wewei"    id="who-wewei"
+              style="--who-color:var(--wewei)">為為</button>
+      <button class="who-btn"        data-who="lingling" id="who-lingling"
+              style="--who-color:var(--lingling)">翎翎</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modal-cancel">取消</button>
+      <button class="btn-save"   id="modal-save">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     新增項目 Modal
+     ================================================================ -->
+<div class="modal-overlay" id="addItemModal" role="dialog" aria-modal="true">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-handle"></div>
+    <div class="modal-title">新增項目</div>
+    <div class="modal-item-name" id="add-modal-day-label"></div>
+
+    <!-- 名稱 -->
+    <div class="form-field">
+      <label class="form-label">名稱 <span class="required">*</span></label>
+      <input type="text" id="add-name" class="form-input" placeholder="例：黑門市場小吃">
+    </div>
+
+    <!-- 副標題 -->
+    <div class="form-field">
+      <label class="form-label">補充說明</label>
+      <input type="text" id="add-sub" class="form-input" placeholder="例：在地小吃體驗">
+    </div>
+
+    <!-- 類別 -->
+    <div class="form-field">
+      <label class="form-label">類別</label>
+      <select id="add-cat" class="form-select">
+        <option value="餐飲">餐飲</option>
+        <option value="購物">購物</option>
+        <option value="伴手禮">伴手禮</option>
+        <option value="景點">景點</option>
+        <option value="交通">交通</option>
+        <option value="住宿">住宿</option>
+      </select>
+    </div>
+
+    <!-- 金額 + 幣別 -->
+    <div class="form-field">
+      <label class="form-label">金額</label>
+      <div class="currency-toggle" style="margin-bottom:8px">
+        <button class="cur-btn active" id="add-btn-twd">🇹🇼 TWD</button>
+        <button class="cur-btn" id="add-btn-jpy">🇯🇵 JPY</button>
+      </div>
+      <div class="input-row">
+        <span class="modal-cur-prefix" id="add-cur-prefix">NT$</span>
+        <input type="number" id="add-amount" data-cur="TWD"
+               inputmode="decimal" placeholder="0" min="0" step="1">
+      </div>
+      <div class="modal-hint" id="add-hint"></div>
+    </div>
+
+    <!-- 誰付 -->
+    <div class="form-field">
+      <label class="form-label">誰的費用</label>
+      <div class="who-toggle">
+        <button class="add-who-btn active" data-who="both"     id="add-who-both">🤝 兩人</button>
+        <button class="add-who-btn"        data-who="wewei"    id="add-who-wewei"
+                style="--who-color:var(--wewei)">為為</button>
+        <button class="add-who-btn"        data-who="lingling" id="add-who-lingling"
+                style="--who-color:var(--lingling)">翎翎</button>
+      </div>
+    </div>
+
+    <!-- 備注 -->
+    <div class="form-field">
+      <label class="form-label">備注</label>
+      <input type="text" id="add-notes" class="form-input" placeholder="可選填">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="add-cancel">取消</button>
+      <button class="btn-save"   id="add-save">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Scripts ─────────────────────────────────────────────── -->
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
