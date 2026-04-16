@@ -22,7 +22,6 @@ function showTab(tabId) {
   const tabs = document.querySelectorAll('.tab-btn');
   const tabIds = ['overview', 'day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7'];
   tabs.forEach((t, i) => t.classList.toggle('active', tabIds[i] === tabId));
-  tabs[tabIds.indexOf(tabId)]?.scrollIntoView({ inline: 'center', behavior: 'smooth' });
 
   renderStats();
 }
