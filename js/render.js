@@ -18,6 +18,7 @@ function showTab(tabId) {
   _currentTab = tabId;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('visible'));
   document.getElementById('view-' + tabId).classList.add('visible');
+  window.scrollTo(0, 0);
 
   const tabs = document.querySelectorAll('.tab-btn');
   const tabIds = ['overview', 'day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7'];
