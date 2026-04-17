@@ -328,6 +328,68 @@
   </div>
 </div>
 
+<!-- ================================================================
+     編輯項目 Modal
+     ================================================================ -->
+<div class="modal-overlay" id="editModal" role="dialog" aria-modal="true">
+  <div class="modal-sheet modal-sheet-tall">
+    <div class="modal-handle"></div>
+    <div class="modal-title">編輯項目</div>
+    <div class="modal-item-name" id="edit-modal-title"></div>
+
+    <!-- 自訂項目才顯示：名稱 -->
+    <div class="form-field" id="edit-name-wrap" style="display:none">
+      <label class="form-label">名稱</label>
+      <input type="text" id="edit-name" class="form-input" placeholder="項目名稱">
+    </div>
+
+    <!-- 自訂項目才顯示：說明 -->
+    <div class="form-field" id="edit-sub-wrap" style="display:none">
+      <label class="form-label">補充說明</label>
+      <input type="text" id="edit-sub" class="form-input" placeholder="補充說明">
+    </div>
+
+    <!-- 類別 -->
+    <div class="form-field">
+      <label class="form-label">類別</label>
+      <div class="cat-toggle" id="edit-cat-toggle"></div>
+    </div>
+
+    <!-- 心得 -->
+    <div class="form-field">
+      <label class="form-label">心得備注</label>
+      <textarea id="edit-notes" rows="3" style="min-height:80px" placeholder="記錄心得、備注…"></textarea>
+    </div>
+
+    <!-- 照片 -->
+    <div class="form-field">
+      <label class="form-label">照片（最多 5 張）</label>
+      <div class="photo-grid" id="edit-photo-grid"></div>
+      <button class="photo-add-btn" id="edit-photo-add-btn">＋ 新增照片</button>
+      <input type="file" id="edit-photo-input" accept="image/*" multiple style="display:none">
+    </div>
+
+    <!-- 不去了 -->
+    <button class="skip-toggle-btn" id="edit-skip-btn">標記為「不去了」</button>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="edit-cancel">取消</button>
+      <button class="btn-save"   id="edit-save">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     照片全螢幕 Viewer
+     ================================================================ -->
+<div id="photoViewer" style="display:none">
+  <button class="viewer-close" onclick="closePhotoViewer()">✕</button>
+  <button class="viewer-nav viewer-prev" onclick="viewerPrev()">‹</button>
+  <img id="photoViewerImg" src="" alt="照片">
+  <button class="viewer-nav viewer-next" onclick="viewerNext()">›</button>
+  <div class="viewer-counter" id="viewer-counter"></div>
+</div>
+
 <!-- ── Scripts ─────────────────────────────────────────────── -->
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>

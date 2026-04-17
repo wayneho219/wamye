@@ -74,6 +74,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') closeAddItemModal();
   });
 
+  // ── 編輯項目 Modal ─────────────────────────────────────────
+  document.getElementById('edit-cancel')?.addEventListener('click', closeEditModal);
+  document.getElementById('edit-save')?.addEventListener('click', saveEditModal);
+  document.getElementById('editModal')?.addEventListener('click', e => {
+    if (e.target.id === 'editModal') closeEditModal();
+  });
+  document.getElementById('edit-skip-btn')?.addEventListener('click', toggleSkipBtn);
+
+  // 照片新增
+  document.getElementById('edit-photo-add-btn')?.addEventListener('click', () => {
+    document.getElementById('edit-photo-input')?.click();
+  });
+  document.getElementById('edit-photo-input')?.addEventListener('change', e => {
+    handlePhotoInput(e.target);
+  });
+
   // 預設顯示總覽
   showTab('overview');
 });

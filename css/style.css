@@ -535,6 +535,139 @@ textarea:focus { outline: none; border-color: var(--pink); }
   padding-right: 36px;
 }
 
+/* ── 不去了 badge ────────────────────────────────────────── */
+.skip-badge {
+  display: inline-block; font-size: .6rem; font-weight: 700;
+  background: #616161; color: #fff; border-radius: 4px;
+  padding: 2px 7px; letter-spacing: .02em;
+}
+.item-card.skipped { opacity: .5; }
+.item-card.skipped .item-name { text-decoration: line-through; }
+
+/* ── 編輯按鈕 ────────────────────────────────────────────── */
+.edit-item-btn {
+  display: inline-flex; align-items: center;
+  margin-top: 10px;
+  min-height: 40px; padding: 8px 16px;
+  background: var(--red-light); border: 1.5px solid var(--red-mid);
+  border-radius: 20px; color: var(--red);
+  font-size: .8rem; font-weight: 700; cursor: pointer; letter-spacing: .02em;
+}
+.edit-item-btn:active { background: var(--red-mid); transform: scale(.97); }
+
+/* 使用者心得顯示 */
+.user-notes {
+  margin-top: 8px; padding: 10px 12px;
+  background: #fffde7; border: 1px solid #fff176;
+  border-radius: var(--radius-sm); font-size: .82rem; line-height: 1.6; color: #555;
+}
+.user-notes-label {
+  display: inline-block; font-size: .65rem; font-weight: 700; color: #f9a825;
+  background: #fff9c4; border-radius: 4px; padding: 1px 7px;
+  margin-bottom: 5px; letter-spacing: .04em;
+}
+
+/* 原始備注 */
+.orig-notes { color: var(--muted); font-size: .8rem; line-height: 1.7; margin-bottom: 6px; }
+
+/* ── 類別切換 ─────────────────────────────────────────────── */
+.cat-toggle {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.cat-btn {
+  min-height: 40px; padding: 8px 16px;
+  border: 1.5px solid var(--border); border-radius: 20px;
+  background: var(--bg); color: var(--muted);
+  font-size: .82rem; font-weight: 600; cursor: pointer;
+  transition: all .15s;
+}
+.cat-btn.active {
+  background: var(--red); border-color: var(--red); color: #fff;
+  box-shadow: 0 2px 6px rgba(192,57,43,.25);
+}
+.cat-btn:active { opacity: .75; transform: scale(.96); }
+
+/* ── 照片網格 ─────────────────────────────────────────────── */
+.photo-grid {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+}
+.photo-thumb-wrap { position: relative; }
+.photo-thumb {
+  width: 76px; height: 76px; border-radius: var(--radius-sm);
+  background-size: cover; background-position: center;
+  border: 1.5px solid var(--border); cursor: pointer;
+  display: block; transition: transform .1s;
+}
+.photo-thumb:active { transform: scale(.94); }
+.photo-remove {
+  position: absolute; top: -6px; right: -6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #e74c3c; color: #fff; border: none;
+  font-size: .65rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+.photo-remove:active { background: #c0392b; transform: scale(.9); }
+
+/* 詳情區照片縮圖（只讀） */
+.detail-photos { margin-top: 8px; }
+.detail-photos .photo-thumb { width: 72px; height: 72px; }
+
+.photo-add-btn {
+  width: 100%; min-height: 48px;
+  border: 1.5px dashed #bbb; border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--muted);
+  font-size: .85rem; font-weight: 600; cursor: pointer;
+  transition: background .1s;
+}
+.photo-add-btn:active { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+/* ── 不去了 切換按鈕 ─────────────────────────────────────── */
+.skip-toggle-btn {
+  width: 100%; min-height: 52px;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  background: var(--bg); color: var(--muted);
+  font-size: .88rem; font-weight: 600; cursor: pointer;
+  transition: all .15s; margin-bottom: 4px;
+}
+.skip-toggle-btn.skip-active {
+  background: #616161; border-color: #616161; color: #fff;
+}
+.skip-toggle-btn:active { opacity: .8; transform: scale(.98); }
+
+/* ── 照片 Viewer ─────────────────────────────────────────── */
+#photoViewer {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,.93);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+}
+#photoViewerImg {
+  max-width: 100%; max-height: 80vh;
+  object-fit: contain; border-radius: var(--radius-sm);
+  display: block;
+}
+.viewer-close {
+  position: absolute; top: calc(var(--safe-top) + 14px); right: 18px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,.15); border: none; color: #fff;
+  font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.viewer-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,.15); border: none; color: #fff;
+  font-size: 1.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.viewer-prev { left: 12px; }
+.viewer-next { right: 12px; }
+.viewer-nav:active, .viewer-close:active { background: rgba(255,255,255,.35); }
+.viewer-counter {
+  position: absolute; bottom: calc(var(--safe-bottom) + 24px);
+  left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,.7); font-size: .82rem; font-weight: 600;
+}
+
 /* ── 桌機補強（hover 效果只在可 hover 的設備上啟用）─────── */
 @media (hover: hover) and (pointer: fine) {
   .tab-btn:hover        { color: var(--red); background: var(--red-light); }

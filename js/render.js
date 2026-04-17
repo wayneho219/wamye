@@ -1,5 +1,5 @@
 // ============================================================
-//  render.js — DOM 渲染、分頁切換、金額/誰付編輯、新增項目
+//  render.js — DOM 渲染、分頁、金額/誰付、新增、編輯 Modal
 // ============================================================
 
 const CAT_COLORS = {
@@ -20,14 +20,13 @@ function showTab(tabId) {
   document.getElementById('view-' + tabId).classList.add('visible');
   window.scrollTo(0, 0);
 
-  const tabs = document.querySelectorAll('.tab-btn');
-  const tabIds = ['overview', 'day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7'];
+  const tabs   = document.querySelectorAll('.tab-btn');
+  const tabIds = ['overview','day1','day2','day3','day4','day5','day6','day7'];
   tabs.forEach((t, i) => t.classList.toggle('active', tabIds[i] === tabId));
-
   renderStats();
 }
 
-// ── 金額讀取（state 優先，fallback 到 data.js 預設值）────────
+// ── 金額讀取 ─────────────────────────────────────────────────
 function resolvedAmount(item) {
   const override = State.getAmount(item.id);
   if (override) return override;
@@ -39,7 +38,11 @@ function twdValue(item) {
   return toTWD(raw, cur);
 }
 
-// ── 格式化顯示金額 ────────────────────────────────────────────
+function resolvedCat(item) {
+  const edit = State.getEdit(item.id);
+  return edit.catOverride || item.cat;
+}
+
 function formatTWD(n) {
   if (!n) return null;
   return 'NT$' + n.toLocaleString();
@@ -48,58 +51,75 @@ function formatTWD(n) {
 // ── Who badge ─────────────────────────────────────────────────
 function whoHTML(who) {
   if (!who || who === 'both') return '';
-  const color = WHO_COLORS[who];
-  const label = WHO_LABELS[who];
-  return `<span class="who-badge" style="background:${color}">${label}</span>`;
+  return `<span class="who-badge" style="background:${WHO_COLORS[who]}">${WHO_LABELS[who]}</span>`;
 }
 
-// ── 渲染單一 item card ────────────────────────────────────────
+// ── 渲染單一卡片 ───────────────────────────────────────────────
 function renderItemCard(item) {
   const { raw, cur, who } = resolvedAmount(item);
-  const twd = toTWD(raw, cur);
-  const isDone = State.isDone(item.id);
+  const twd      = toTWD(raw, cur);
+  const isDone   = State.isDone(item.id);
+  const skipped  = State.isSkipped(item.id);
+  const edit     = State.getEdit(item.id);
+  const cat      = resolvedCat(item);
 
+  // 金額按鈕
   const amountHTML = raw
-    ? `<button class="amount-btn${cur === 'JPY' ? ' is-jpy' : ''}" data-id="${item.id}" aria-label="編輯金額">
+    ? `<button class="amount-btn${cur==='JPY'?' is-jpy':''}" data-id="${item.id}">
         <span class="amt-twd">${formatTWD(twd)}</span>
-        ${cur === 'JPY' ? `<span class="amt-hint">¥${raw.toLocaleString()}</span>` : ''}
+        ${cur==='JPY'?`<span class="amt-hint">¥${raw.toLocaleString()}</span>`:''}
        </button>`
-    : `<button class="amount-btn empty" data-id="${item.id}" aria-label="新增金額">＋ 金額</button>`;
+    : `<button class="amount-btn empty" data-id="${item.id}">＋ 金額</button>`;
 
-  const timeHTML  = item.time ? `<span class="time-badge">${item.time}</span>` : '';
-  const linksHTML = item.links?.length
-    ? item.links.map(l =>
-        `<a href="${l.url}" target="_blank" rel="noopener">${l.label === 'Google Maps' ? '📍' : '🔗'} ${l.label}</a>`
-      ).join('')
-    : '';
-  const notesHTML  = item.notes ? `<p>${item.notes.replace(/\n/g, '<br>')}</p>` : '';
+  const timeHTML    = item.time ? `<span class="time-badge">${item.time}</span>` : '';
   const backupBadge = item.backup ? `<span class="backup-label">備案</span>` : '';
+  const skipBadge   = skipped ? `<span class="skip-badge">不去了</span>` : '';
   const deleteBtn   = item.custom
     ? `<button class="delete-btn" data-delete="${item.id}" aria-label="刪除">✕</button>`
     : '';
 
+  // 展開詳情區：原始連結 + 心得 + 照片
+  const origNotes = item.notes ? `<p class="orig-notes">${item.notes.replace(/\n/g,'<br>')}</p>` : '';
+  const linksHTML = item.links?.length
+    ? `<div class="detail-links">${item.links.map(l =>
+        `<a href="${l.url}" target="_blank" rel="noopener">${l.label==='Google Maps'?'📍':'🔗'} ${l.label}</a>`
+      ).join('')}</div>`
+    : '';
+
+  // 使用者心得
+  const userNotes = edit.notes
+    ? `<div class="user-notes"><span class="user-notes-label">心得</span>${edit.notes.replace(/\n/g,'<br>')}</div>`
+    : '';
+
+  // 照片縮圖
+  const photosHTML = edit.photos?.length
+    ? `<div class="photo-grid detail-photos">${edit.photos.map((src, i) =>
+        `<button class="photo-thumb" data-viewer="${item.id}" data-idx="${i}"
+                 style="background-image:url('${src}')"></button>`
+      ).join('')}</div>`
+    : '';
+
   return `
-<div class="item-card${isDone ? ' done' : ''}${item.backup ? ' backup' : ''}${item.custom ? ' custom' : ''}" id="card-${item.id}">
+<div class="item-card${isDone?' done':''}${skipped?' skipped':''}${item.backup?' backup':''}${item.custom?' custom':''}" id="card-${item.id}">
   <div class="item-main" data-id="${item.id}">
     <button class="item-check" data-check="${item.id}" aria-label="標記完成">
       ${isDone ? checkIcon() : ''}
     </button>
     <div class="item-body">
-      <div class="item-name">${backupBadge}${item.name}${whoHTML(who)}</div>
-      <div class="item-sub">${item.sub || ''}</div>
+      <div class="item-name">${backupBadge}${skipBadge}${item.name}${whoHTML(who)}</div>
+      <div class="item-sub">${item.sub||''}</div>
     </div>
     <div class="item-right">
       ${amountHTML}
-      <span class="tag ${CAT_COLORS[item.cat] || ''}">${item.cat}</span>
+      <span class="tag ${CAT_COLORS[cat]||''}">${cat}</span>
       ${timeHTML}
     </div>
     ${deleteBtn}
   </div>
-  ${notesHTML || linksHTML ? `
   <div class="item-detail" id="detail-${item.id}">
-    ${notesHTML}
-    ${linksHTML ? `<div class="detail-links">${linksHTML}</div>` : ''}
-  </div>` : ''}
+    ${origNotes}${linksHTML}${userNotes}${photosHTML}
+    <button class="edit-item-btn" data-edit="${item.id}">✏ 編輯此項目</button>
+  </div>
 </div>`;
 }
 
@@ -109,7 +129,7 @@ function checkIcon() {
   </svg>`;
 }
 
-// ── 渲染整個行程頁（含自訂項目）─────────────────────────────
+// ── 渲染行程日 ────────────────────────────────────────────────
 function renderDayView(dayId) {
   const container = document.getElementById('view-' + dayId);
   if (!container) return;
@@ -118,8 +138,7 @@ function renderDayView(dayId) {
   const customItems = State.getCustomItems().filter(i => i.day === dayId);
   const allItems    = [...staticItems, ...customItems];
 
-  // 依 section 分組
-  const sectionMap = new Map();
+  const sectionMap   = new Map();
   const sectionOrder = [];
   allItems.forEach(item => {
     const sec = item.section || item.cat;
@@ -127,39 +146,30 @@ function renderDayView(dayId) {
     sectionMap.get(sec).push(item);
   });
 
-  const html = sectionOrder.map(sec => `
+  container.innerHTML = sectionOrder.map(sec => `
     <div class="section-label">${sec}</div>
     ${sectionMap.get(sec).map(renderItemCard).join('')}
-  `).join('');
-
-  container.innerHTML = html + `
-    <button class="add-item-btn" data-day="${dayId}">＋ 新增項目</button>
-  `;
+  `).join('') + `<button class="add-item-btn" data-day="${dayId}">＋ 新增項目</button>`;
 }
 
-function renderAllDays() {
-  DAYS.forEach(d => renderDayView(d.id));
-}
+function renderAllDays() { DAYS.forEach(d => renderDayView(d.id)); }
 
-// ── 重新渲染單一 card ─────────────────────────────────────────
+// ── 重新渲染單一卡片 ──────────────────────────────────────────
 function rerenderCard(itemId) {
-  const staticItem = ITEMS.find(i => i.id === itemId);
-  const customItem = State.getCustomItems().find(i => i.id === itemId);
-  const item = staticItem || customItem;
+  const item = ITEMS.find(i => i.id === itemId)
+            || State.getCustomItems().find(i => i.id === itemId);
   if (!item) return;
-
   const el = document.getElementById('card-' + itemId);
   if (!el) return;
-
   const tmp = document.createElement('div');
   tmp.innerHTML = renderItemCard(item);
   el.replaceWith(tmp.firstElementChild);
 }
 
-// ── 事件綁定（委派）──────────────────────────────────────────
+// ── 事件委派 ─────────────────────────────────────────────────
 function bindDayViewEvents(container) {
   container.addEventListener('click', e => {
-    // 完成勾選
+    // 勾選完成
     const checkBtn = e.target.closest('[data-check]');
     if (checkBtn) {
       e.stopPropagation();
@@ -168,36 +178,35 @@ function bindDayViewEvents(container) {
       renderStats();
       return;
     }
-
     // 刪除自訂項目
     const deleteBtn = e.target.closest('[data-delete]');
     if (deleteBtn) {
       e.stopPropagation();
       if (confirm('確定刪除這個項目？')) {
+        const dayId = deleteBtn.closest('.day-view')?.id.replace('view-','');
         State.deleteCustomItem(deleteBtn.dataset.delete);
-        renderDayView(deleteBtn.closest('.day-view')?.id.replace('view-', ''));
+        renderDayView(dayId);
         renderStats();
-        renderDaySummaryAmounts();
       }
       return;
     }
-
     // 金額編輯
     const amtBtn = e.target.closest('.amount-btn');
-    if (amtBtn) {
-      e.stopPropagation();
-      openAmountModal(amtBtn.dataset.id);
-      return;
-    }
-
+    if (amtBtn) { e.stopPropagation(); openAmountModal(amtBtn.dataset.id); return; }
     // 新增項目
     const addBtn = e.target.closest('.add-item-btn');
-    if (addBtn) {
+    if (addBtn) { e.stopPropagation(); openAddItemModal(addBtn.dataset.day); return; }
+    // 編輯此項目
+    const editBtn = e.target.closest('[data-edit]');
+    if (editBtn) { e.stopPropagation(); openEditModal(editBtn.dataset.edit); return; }
+    // 照片預覽
+    const thumb = e.target.closest('[data-viewer]');
+    if (thumb) {
       e.stopPropagation();
-      openAddItemModal(addBtn.dataset.day);
+      const edit = State.getEdit(thumb.dataset.viewer);
+      openPhotoViewer(edit.photos, parseInt(thumb.dataset.idx));
       return;
     }
-
     // 展開詳情
     const mainRow = e.target.closest('.item-main[data-id]');
     if (mainRow) {
@@ -206,12 +215,11 @@ function bindDayViewEvents(container) {
   });
 }
 
-// ── 統計數字 ─────────────────────────────────────────────────
+// ── 統計 ─────────────────────────────────────────────────────
 function renderStats() {
-  const staticItems = ITEMS;
-  const customItems = State.getCustomItems();
-  const allItems    = [...staticItems, ...customItems];
-  const countable   = allItems.filter(i => !i.backup);
+  const allItems  = [...ITEMS, ...State.getCustomItems()];
+  // 不計入：備案 & 標記不去了
+  const countable = allItems.filter(i => !i.backup && !State.isSkipped(i.id));
 
   const total = allItems.length;
   const done  = allItems.filter(i => State.isDone(i.id)).length;
@@ -219,7 +227,6 @@ function renderStats() {
 
   document.getElementById('globalProgress').style.width = pct + '%';
 
-  // 分類合計
   const cats = CATEGORIES;
   const byCategory = Object.fromEntries(cats.map(c => [c, 0]));
   let grand = 0, weiwei = 0, lingling = 0, both = 0;
@@ -227,12 +234,13 @@ function renderStats() {
   countable.forEach(i => {
     const twd = twdValue(i);
     if (!twd) return;
+    const cat = resolvedCat(i);
     const { who } = resolvedAmount(i);
-    byCategory[i.cat] = (byCategory[i.cat] || 0) + twd;
+    byCategory[cat] = (byCategory[cat] || 0) + twd;
     grand += twd;
-    if (who === 'wewei')    weiwei   += twd;
+    if (who === 'wewei') weiwei += twd;
     else if (who === 'lingling') lingling += twd;
-    else                    both     += twd;
+    else both += twd;
   });
 
   cats.forEach(c => {
@@ -243,7 +251,6 @@ function renderStats() {
   setText('b-both',     both     ? formatTWD(both)     : '—');
   setText('b-wewei',    weiwei   ? formatTWD(weiwei)   : '—');
   setText('b-lingling', lingling ? formatTWD(lingling) : '—');
-
   setText('stat-total', grand ? formatTWD(grand) : '—');
   setText('stat-done',  pct + '%');
   setText('stat-items', total);
@@ -253,83 +260,65 @@ function renderStats() {
     fp.textContent = `${done} / ${total} 完成`;
     fp.classList.toggle('visible', _currentTab !== 'overview');
   }
-
   renderDaySummaryAmounts();
 }
 
-function setText(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = val;
-}
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
 
 function renderDaySummaryAmounts() {
   const customItems = State.getCustomItems();
   DAYS.forEach(d => {
     const el = document.getElementById('day-amt-' + d.id);
     if (!el) return;
-    const allDay = [
-      ...ITEMS.filter(i => i.day === d.id && !i.backup),
-      ...customItems.filter(i => i.day === d.id),
-    ];
-    const total = allDay.reduce((s, i) => s + twdValue(i), 0);
+    const total = [...ITEMS.filter(i => i.day === d.id && !i.backup && !State.isSkipped(i.id)),
+                   ...customItems.filter(i => i.day === d.id && !State.isSkipped(i.id))]
+      .reduce((s, i) => s + twdValue(i), 0);
     el.textContent = total ? formatTWD(total) : '';
   });
 }
 
-// ── 備忘記事 ─────────────────────────────────────────────────
 function renderNotes() {
   const el = document.getElementById('globalNotes');
   if (el) el.value = State.getNotes();
 }
 
-// ── 金額 + 誰付 Modal ────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  金額 + 誰付 Modal
+// ════════════════════════════════════════════════════════════
 let _editingId = null;
 
 function openAmountModal(itemId) {
   _editingId = itemId;
-  const staticItem = ITEMS.find(i => i.id === itemId);
-  const customItem = State.getCustomItems().find(i => i.id === itemId);
-  const item = staticItem || customItem;
+  const item = ITEMS.find(i => i.id === itemId) || State.getCustomItems().find(i => i.id === itemId);
   if (!item) return;
-
   const { raw, cur, who } = resolvedAmount(item);
   document.getElementById('modal-item-name').textContent = item.name;
   document.getElementById('modal-input').value = raw || '';
   setModalCurrency(cur || 'TWD');
   setModalWho(who || 'both');
   updateConversionHint();
-
   document.getElementById('amountModal').classList.add('open');
   document.getElementById('modal-input').focus();
 }
 
-function closeAmountModal() {
-  document.getElementById('amountModal').classList.remove('open');
-  _editingId = null;
-}
+function closeAmountModal() { document.getElementById('amountModal').classList.remove('open'); _editingId = null; }
 
 function setModalCurrency(cur) {
   document.getElementById('btn-twd').classList.toggle('active', cur === 'TWD');
   document.getElementById('btn-jpy').classList.toggle('active', cur === 'JPY');
   document.getElementById('modal-input').dataset.cur = cur;
-  const prefix = document.getElementById('modal-cur-prefix');
-  if (prefix) prefix.textContent = cur === 'JPY' ? '¥' : 'NT$';
+  document.getElementById('modal-cur-prefix').textContent = cur === 'JPY' ? '¥' : 'NT$';
   updateConversionHint();
 }
 
-function getModalCurrency() {
-  return document.getElementById('modal-input').dataset.cur || 'TWD';
-}
+function getModalCurrency() { return document.getElementById('modal-input').dataset.cur || 'TWD'; }
 
 function setModalWho(who) {
-  ['both', 'wewei', 'lingling'].forEach(w => {
-    document.getElementById('who-' + w)?.classList.toggle('active', w === who);
-  });
+  ['both','wewei','lingling'].forEach(w =>
+    document.getElementById('who-' + w)?.classList.toggle('active', w === who));
 }
 
-function getModalWho() {
-  return document.querySelector('.who-btn.active')?.dataset.who || 'both';
-}
+function getModalWho() { return document.querySelector('.who-btn.active')?.dataset.who || 'both'; }
 
 function updateConversionHint() {
   const hint = document.getElementById('modal-hint');
@@ -337,12 +326,9 @@ function updateConversionHint() {
   const cur = getModalCurrency();
   const raw = parseFloat(document.getElementById('modal-input').value) || 0;
   if (cur === 'JPY' && raw > 0) {
-    const twd = Math.round(raw * JPY_TO_TWD);
-    hint.textContent = `¥${raw.toLocaleString()} → NT$${twd.toLocaleString()}（匯率 5:1）`;
+    hint.textContent = `¥${raw.toLocaleString()} → NT$${Math.round(raw * JPY_TO_TWD).toLocaleString()}（匯率 5:1）`;
     hint.style.display = 'block';
-  } else {
-    hint.style.display = 'none';
-  }
+  } else { hint.style.display = 'none'; }
 }
 
 function saveAmountModal() {
@@ -357,34 +343,29 @@ function saveAmountModal() {
   closeAmountModal();
 }
 
-// ── 新增項目 Modal ────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  新增項目 Modal
+// ════════════════════════════════════════════════════════════
 let _addingDay = null;
 
 function openAddItemModal(dayId) {
   _addingDay = dayId;
   const day = DAYS.find(d => d.id === dayId);
-
   document.getElementById('add-modal-day-label').textContent =
     day ? `${day.label}（${day.date} ${day.title}）` : '';
-
-  // 重置表單
-  document.getElementById('add-name').value = '';
-  document.getElementById('add-sub').value  = '';
-  document.getElementById('add-notes').value = '';
+  document.getElementById('add-name').value   = '';
+  document.getElementById('add-sub').value    = '';
+  document.getElementById('add-notes').value  = '';
   document.getElementById('add-amount').value = '';
   setAddCurrency('TWD');
   setAddWho('both');
   document.getElementById('add-cat').value = '餐飲';
   document.getElementById('add-hint').style.display = 'none';
-
   document.getElementById('addItemModal').classList.add('open');
   document.getElementById('add-name').focus();
 }
 
-function closeAddItemModal() {
-  document.getElementById('addItemModal').classList.remove('open');
-  _addingDay = null;
-}
+function closeAddItemModal() { document.getElementById('addItemModal').classList.remove('open'); _addingDay = null; }
 
 function setAddCurrency(cur) {
   document.getElementById('add-btn-twd').classList.toggle('active', cur === 'TWD');
@@ -394,19 +375,14 @@ function setAddCurrency(cur) {
   updateAddHint();
 }
 
-function getAddCurrency() {
-  return document.getElementById('add-amount').dataset.cur || 'TWD';
-}
+function getAddCurrency() { return document.getElementById('add-amount').dataset.cur || 'TWD'; }
 
 function setAddWho(who) {
-  ['both', 'wewei', 'lingling'].forEach(w => {
-    document.getElementById('add-who-' + w)?.classList.toggle('active', w === who);
-  });
+  ['both','wewei','lingling'].forEach(w =>
+    document.getElementById('add-who-' + w)?.classList.toggle('active', w === who));
 }
 
-function getAddWho() {
-  return document.querySelector('.add-who-btn.active')?.dataset.who || 'both';
-}
+function getAddWho() { return document.querySelector('.add-who-btn.active')?.dataset.who || 'both'; }
 
 function updateAddHint() {
   const hint = document.getElementById('add-hint');
@@ -416,38 +392,215 @@ function updateAddHint() {
   if (cur === 'JPY' && raw > 0) {
     hint.textContent = `¥${raw.toLocaleString()} → NT$${Math.round(raw * JPY_TO_TWD).toLocaleString()}（匯率 5:1）`;
     hint.style.display = 'block';
-  } else {
-    hint.style.display = 'none';
-  }
+  } else { hint.style.display = 'none'; }
 }
 
 function saveAddItem() {
   const name = document.getElementById('add-name').value.trim();
-  if (!name) {
-    document.getElementById('add-name').focus();
-    return;
-  }
-  const raw    = parseFloat(document.getElementById('add-amount').value) || 0;
-  const cur    = getAddCurrency();
-  const who    = getAddWho();
-  const cat    = document.getElementById('add-cat').value;
-  const sub    = document.getElementById('add-sub').value.trim();
-  const notes  = document.getElementById('add-notes').value.trim();
-
+  if (!name) { document.getElementById('add-name').focus(); return; }
   State.addCustomItem({
-    day: _addingDay,
-    cat,
-    section: cat,
-    name,
-    sub,
-    notes,
-    amount: raw,
-    cur,
-    who,
-    links: [],
+    day: _addingDay, cat: document.getElementById('add-cat').value,
+    section: document.getElementById('add-cat').value,
+    name, sub: document.getElementById('add-sub').value.trim(),
+    notes: document.getElementById('add-notes').value.trim(),
+    amount: parseFloat(document.getElementById('add-amount').value) || 0,
+    cur: getAddCurrency(), who: getAddWho(), links: [],
   });
-
   renderDayView(_addingDay);
   renderStats();
   closeAddItemModal();
+}
+
+// ════════════════════════════════════════════════════════════
+//  編輯項目 Modal
+// ════════════════════════════════════════════════════════════
+let _editModalId  = null;
+let _editPhotos   = [];   // 正在編輯中的照片陣列（base64）
+
+function openEditModal(itemId) {
+  _editModalId = itemId;
+  const staticItem = ITEMS.find(i => i.id === itemId);
+  const customItem = State.getCustomItems().find(i => i.id === itemId);
+  const item = staticItem || customItem;
+  if (!item) return;
+
+  const edit = State.getEdit(itemId);
+  _editPhotos = [...(edit.photos || [])];
+
+  // 標題
+  document.getElementById('edit-modal-title').textContent = item.name;
+
+  // 自訂項目才顯示名稱/說明欄位
+  const isCustom = !!item.custom;
+  document.getElementById('edit-name-wrap').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('edit-sub-wrap').style.display  = isCustom ? 'block' : 'none';
+  if (isCustom) {
+    document.getElementById('edit-name').value = item.name || '';
+    document.getElementById('edit-sub').value  = item.sub  || '';
+  }
+
+  // 類別選擇器
+  const currentCat = edit.catOverride || item.cat;
+  renderEditCatToggle(currentCat);
+
+  // 心得
+  document.getElementById('edit-notes').value = edit.notes || '';
+
+  // 照片
+  renderEditPhotoGrid();
+
+  // 不去了
+  renderSkipBtn(edit.skipped);
+
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+  _editModalId = null;
+  _editPhotos  = [];
+}
+
+function renderEditCatToggle(activeCat) {
+  const wrap = document.getElementById('edit-cat-toggle');
+  wrap.innerHTML = CATEGORIES.map(c => `
+    <button class="cat-btn${c === activeCat ? ' active' : ''}" data-cat="${c}">${c}</button>
+  `).join('');
+  wrap.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      wrap.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
+function getEditCat() {
+  return document.querySelector('#edit-cat-toggle .cat-btn.active')?.dataset.cat || null;
+}
+
+function renderSkipBtn(skipped) {
+  const btn = document.getElementById('edit-skip-btn');
+  if (!btn) return;
+  if (skipped) {
+    btn.textContent  = '✓ 已標記為「不去了」（點擊取消）';
+    btn.classList.add('skip-active');
+  } else {
+    btn.textContent  = '標記為「不去了」';
+    btn.classList.remove('skip-active');
+  }
+}
+
+function toggleSkipBtn() {
+  const btn  = document.getElementById('edit-skip-btn');
+  const next = !btn.classList.contains('skip-active');
+  renderSkipBtn(next);
+}
+
+// ── 照片處理 ─────────────────────────────────────────────────
+function renderEditPhotoGrid() {
+  const grid = document.getElementById('edit-photo-grid');
+  if (!grid) return;
+  grid.innerHTML = _editPhotos.map((src, i) => `
+    <div class="photo-thumb-wrap">
+      <button class="photo-thumb" style="background-image:url('${src}')"
+              onclick="openPhotoViewer(_editPhotos, ${i})"></button>
+      <button class="photo-remove" onclick="removeEditPhoto(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeEditPhoto(idx) {
+  _editPhotos.splice(idx, 1);
+  renderEditPhotoGrid();
+}
+
+function handlePhotoInput(input) {
+  const files = Array.from(input.files);
+  const remaining = 5 - _editPhotos.length;
+  files.slice(0, remaining).forEach(file => {
+    resizeImage(file, 900, 0.72, base64 => {
+      _editPhotos.push(base64);
+      renderEditPhotoGrid();
+    });
+  });
+  input.value = '';
+}
+
+function resizeImage(file, maxDim, quality, callback) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(maxDim / img.width, maxDim / img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveEditModal() {
+  if (!_editModalId) return;
+  const staticItem = ITEMS.find(i => i.id === _editModalId);
+  const customItem = State.getCustomItems().find(i => i.id === _editModalId);
+  const item = staticItem || customItem;
+
+  const cat     = getEditCat();
+  const notes   = document.getElementById('edit-notes').value.trim();
+  const skipped = document.getElementById('edit-skip-btn').classList.contains('skip-active');
+
+  // 儲存通用編輯（心得、照片、不去了、類別覆寫）
+  State.setEdit(_editModalId, {
+    notes,
+    photos:      _editPhotos,
+    skipped,
+    catOverride: cat !== item.cat ? cat : null,
+  });
+
+  // 自訂項目額外更新名稱/說明/類別
+  if (item.custom) {
+    const name = document.getElementById('edit-name').value.trim();
+    const sub  = document.getElementById('edit-sub').value.trim();
+    State.updateCustomItem(_editModalId, {
+      name: name || item.name,
+      sub:  sub  || item.sub,
+      cat,
+      section: cat,
+    });
+  }
+
+  rerenderCard(_editModalId);
+  renderStats();
+  closeEditModal();
+}
+
+// ── 照片全螢幕 ────────────────────────────────────────────────
+let _viewerPhotos = [];
+let _viewerIdx    = 0;
+
+function openPhotoViewer(photos, idx) {
+  _viewerPhotos = photos;
+  _viewerIdx    = idx;
+  const overlay = document.getElementById('photoViewer');
+  overlay.style.display = 'flex';
+  document.getElementById('photoViewerImg').src = photos[idx];
+  document.getElementById('viewer-counter').textContent =
+    photos.length > 1 ? `${idx + 1} / ${photos.length}` : '';
+}
+
+function closePhotoViewer() {
+  document.getElementById('photoViewer').style.display = 'none';
+}
+
+function viewerPrev() {
+  if (_viewerIdx > 0) openPhotoViewer(_viewerPhotos, _viewerIdx - 1);
+}
+
+function viewerNext() {
+  if (_viewerIdx < _viewerPhotos.length - 1) openPhotoViewer(_viewerPhotos, _viewerIdx + 1);
 }
