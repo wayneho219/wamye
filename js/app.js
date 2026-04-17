@@ -90,6 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
     handlePhotoInput(e.target);
   });
 
+  // 左右滑動切換行程日
+  initSwipe();
+
   // 預設顯示總覽
   showTab('overview');
 });

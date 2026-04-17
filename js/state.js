@@ -14,7 +14,7 @@
 const STORAGE_KEY = 'japan2026';
 
 const State = (() => {
-  let _data = { done: {}, amounts: {}, edits: {}, customItems: [], notes: '' };
+  let _data = { done: {}, amounts: {}, edits: {}, customItems: [], notes: '', order: {} };
 
   function load() {
     try {
@@ -27,6 +27,7 @@ const State = (() => {
           edits:       parsed.edits       || {},
           customItems: parsed.customItems || [],
           notes:       parsed.notes       || '',
+          order:       parsed.order       || {},
         };
       }
     } catch (e) { console.warn('state load failed', e); }
@@ -93,6 +94,10 @@ const State = (() => {
   function getNotes()       { return _data.notes || ''; }
   function setNotes(text)   { _data.notes = text; save(); }
 
+  // ── 排列順序 ───────────────────────────────────────────────
+  function getOrder(dayId)      { return _data.order[dayId] || []; }
+  function setOrder(dayId, ids) { _data.order[dayId] = ids; save(); }
+
   return {
     load,
     isDone, toggleDone,
@@ -100,5 +105,6 @@ const State = (() => {
     getEdit, setEdit, isSkipped,
     getCustomItems, addCustomItem, updateCustomItem, deleteCustomItem,
     getNotes, setNotes,
+    getOrder, setOrder,
   };
 })();

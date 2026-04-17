@@ -11,6 +11,12 @@ const CAT_COLORS = {
   '伴手禮': 'tag-souvenir',
 };
 
+// ── 拖拉排序狀態 ──────────────────────────────────────────────
+let _dragSrcId       = null;
+let _dragOverId      = null;
+let _dragBefore      = true;
+let _isTouchDragging = false;
+
 // ── 分頁切換 ──────────────────────────────────────────────────
 let _currentTab = 'overview';
 
@@ -100,19 +106,22 @@ function renderItemCard(item) {
     : '';
 
   return `
-<div class="item-card${isDone?' done':''}${skipped?' skipped':''}${item.backup?' backup':''}${item.custom?' custom':''}" id="card-${item.id}">
+<div class="item-card${isDone?' done':''}${skipped?' skipped':''}${item.backup?' backup':''}${item.custom?' custom':''}"
+     id="card-${item.id}" draggable="true" data-drag-id="${item.id}">
   <div class="item-main" data-id="${item.id}">
     <button class="item-check" data-check="${item.id}" aria-label="標記完成">
       ${isDone ? checkIcon() : ''}
     </button>
     <div class="item-body">
       <div class="item-name">${backupBadge}${skipBadge}${item.name}${whoHTML(who)}</div>
-      <div class="item-sub">${item.sub||''}</div>
+      ${item.sub ? `<div class="item-sub">${item.sub}</div>` : ''}
+      <div class="item-meta">
+        <span class="tag ${CAT_COLORS[cat]||''}">${cat}</span>
+        ${timeHTML}
+      </div>
     </div>
     <div class="item-right">
       ${amountHTML}
-      <span class="tag ${CAT_COLORS[cat]||''}">${cat}</span>
-      ${timeHTML}
     </div>
     ${deleteBtn}
   </div>
@@ -129,27 +138,46 @@ function checkIcon() {
   </svg>`;
 }
 
+// ── 取得某天所有項目 ──────────────────────────────────────────
+function getAllDayItems(dayId) {
+  return [
+    ...ITEMS.filter(i => i.day === dayId),
+    ...State.getCustomItems().filter(i => i.day === dayId),
+  ];
+}
+
 // ── 渲染行程日 ────────────────────────────────────────────────
 function renderDayView(dayId) {
   const container = document.getElementById('view-' + dayId);
   if (!container) return;
 
-  const staticItems = ITEMS.filter(i => i.day === dayId);
-  const customItems = State.getCustomItems().filter(i => i.day === dayId);
-  const allItems    = [...staticItems, ...customItems];
+  let items      = getAllDayItems(dayId);
+  const order    = State.getOrder(dayId);
 
-  const sectionMap   = new Map();
-  const sectionOrder = [];
-  allItems.forEach(item => {
+  if (order.length) {
+    // 依儲存順序排列，未知 id 排到最後
+    items = [...items].sort((a, b) => {
+      const ai = order.indexOf(a.id), bi = order.indexOf(b.id);
+      return (ai < 0 ? 9999 : ai) - (bi < 0 ? 9999 : bi);
+    });
+  } else {
+    // 預設：依 section 分組
+    const secOrder = [], secMap = new Map();
+    items.forEach(i => {
+      const s = i.section || i.cat;
+      if (!secMap.has(s)) { secMap.set(s, []); secOrder.push(s); }
+      secMap.get(s).push(i);
+    });
+    items = secOrder.flatMap(s => secMap.get(s));
+  }
+
+  let lastSec = null;
+  container.innerHTML = items.map(item => {
     const sec = item.section || item.cat;
-    if (!sectionMap.has(sec)) { sectionMap.set(sec, []); sectionOrder.push(sec); }
-    sectionMap.get(sec).push(item);
-  });
-
-  container.innerHTML = sectionOrder.map(sec => `
-    <div class="section-label">${sec}</div>
-    ${sectionMap.get(sec).map(renderItemCard).join('')}
-  `).join('') + `<button class="add-item-btn" data-day="${dayId}">＋ 新增項目</button>`;
+    const lbl = sec !== lastSec ? `<div class="section-label">${sec}</div>` : '';
+    lastSec   = sec;
+    return lbl + renderItemCard(item);
+  }).join('') + `<button class="add-item-btn" data-day="${dayId}">＋ 新增項目</button>`;
 }
 
 function renderAllDays() { DAYS.forEach(d => renderDayView(d.id)); }
@@ -168,6 +196,7 @@ function rerenderCard(itemId) {
 
 // ── 事件委派 ─────────────────────────────────────────────────
 function bindDayViewEvents(container) {
+  initDragSort(container);
   container.addEventListener('click', e => {
     // 勾選完成
     const checkBtn = e.target.closest('[data-check]');
@@ -603,4 +632,157 @@ function viewerPrev() {
 
 function viewerNext() {
   if (_viewerIdx < _viewerPhotos.length - 1) openPhotoViewer(_viewerPhotos, _viewerIdx + 1);
+}
+
+// ════════════════════════════════════════════════════════════
+//  拖拉排序
+// ════════════════════════════════════════════════════════════
+function _applyDragOrder(dayId) {
+  if (!_dragSrcId || !_dragOverId || _dragSrcId === _dragOverId) return;
+  const items   = getAllDayItems(dayId);
+  const ids     = items.map(i => i.id);
+  const fromIdx = ids.indexOf(_dragSrcId);
+  if (fromIdx < 0) return;
+  ids.splice(fromIdx, 1);
+  const newToIdx = ids.indexOf(_dragOverId);
+  if (newToIdx < 0) return;
+  const insertAt = _dragBefore ? newToIdx : newToIdx + 1;
+  ids.splice(insertAt, 0, _dragSrcId);
+  State.setOrder(dayId, ids);
+  renderDayView(dayId);
+}
+
+function _showDragPlaceholder(clientY, container) {
+  container.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
+  const cards = [...container.querySelectorAll('.item-card[data-drag-id]:not(.dragging)')];
+  if (!cards.length) return;
+  let target = cards[cards.length - 1];
+  let before = false;
+  for (const c of cards) {
+    const r = c.getBoundingClientRect();
+    if (clientY < r.top + r.height / 2) { target = c; before = true; break; }
+  }
+  _dragOverId = target.dataset.dragId;
+  _dragBefore = before;
+  const ph = document.createElement('div');
+  ph.className = 'drag-placeholder';
+  before ? target.before(ph) : target.after(ph);
+}
+
+// ── Desktop HTML5 drag ────────────────────────────────────────
+function _initDragDesktop(container) {
+  container.addEventListener('dragstart', e => {
+    const card = e.target.closest('.item-card[data-drag-id]');
+    if (!card) return;
+    _dragSrcId = card.dataset.dragId;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', _dragSrcId);
+  });
+
+  container.addEventListener('dragend', () => {
+    container.querySelectorAll('.dragging').forEach(c => c.classList.remove('dragging'));
+    container.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
+  });
+
+  container.addEventListener('dragover', e => {
+    e.preventDefault();
+    const card = e.target.closest('.item-card[data-drag-id]');
+    if (!card || card.dataset.dragId === _dragSrcId) return;
+    _showDragPlaceholder(e.clientY, container);
+  });
+
+  container.addEventListener('drop', e => {
+    e.preventDefault();
+    container.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
+    _applyDragOrder(container.id.replace('view-', ''));
+    _dragSrcId = null; _dragOverId = null;
+  });
+}
+
+// ── Touch (long press) drag ───────────────────────────────────
+function _initDragTouch(container) {
+  let timer  = null;
+  let isDrag = false;
+  let startX = 0, startY = 0;
+
+  container.addEventListener('touchstart', e => {
+    const card = e.target.closest('.item-card[data-drag-id]');
+    if (!card) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    timer = setTimeout(() => {
+      isDrag = true;
+      _isTouchDragging = true;
+      _dragSrcId = card.dataset.dragId;
+      card.classList.add('dragging');
+      navigator.vibrate?.(25);
+    }, 400);
+  }, { passive: true });
+
+  container.addEventListener('touchmove', e => {
+    if (!isDrag) {
+      // 手指移動太多就取消長按計時器（認定是滑動）
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (Math.hypot(dx, dy) > 10) { clearTimeout(timer); timer = null; }
+      return;
+    }
+    e.preventDefault();
+    _showDragPlaceholder(e.touches[0].clientY, container);
+  }, { passive: false });
+
+  const endTouch = () => {
+    clearTimeout(timer); timer = null;
+    container.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
+    if (isDrag) {
+      _applyDragOrder(container.id.replace('view-', ''));
+      container.querySelectorAll('.dragging').forEach(c => c.classList.remove('dragging'));
+    }
+    isDrag = false;
+    // 稍後才清除，讓 swipe 偵測可以排除拖拉尾端的 touchend
+    setTimeout(() => { _isTouchDragging = false; }, 100);
+    _dragSrcId = null; _dragOverId = null;
+  };
+
+  container.addEventListener('touchend',    endTouch, { passive: true });
+  container.addEventListener('touchcancel', endTouch, { passive: true });
+}
+
+function initDragSort(container) {
+  _initDragDesktop(container);
+  _initDragTouch(container);
+}
+
+// ════════════════════════════════════════════════════════════
+//  左右滑動切換行程日
+// ════════════════════════════════════════════════════════════
+function initSwipe() {
+  const DAY_TABS = ['day1','day2','day3','day4','day5','day6','day7'];
+  let startX = 0, startY = 0, startT = 0;
+
+  document.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startT = Date.now();
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (_isTouchDragging) return;
+    if (document.querySelector('.modal-overlay.open')) return;
+    if (document.getElementById('photoViewer')?.style.display !== 'none') return;
+    if (_currentTab === 'overview') return;
+
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    const dt = Date.now() - startT;
+
+    if (Math.abs(dx) < 50) return;
+    if (Math.abs(dy) > Math.abs(dx) * 0.7) return;
+    if (dt > 400) return;
+
+    const idx = DAY_TABS.indexOf(_currentTab);
+    if (dx < 0 && idx < DAY_TABS.length - 1) showTab(DAY_TABS[idx + 1]);
+    if (dx > 0 && idx > 0)                   showTab(DAY_TABS[idx - 1]);
+  }, { passive: true });
 }
