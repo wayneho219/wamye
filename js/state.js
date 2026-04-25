@@ -5,6 +5,7 @@
 //  {
 //    done:        { 'item-0': true },
 //    amounts:     { 'item-0': { raw, cur, who } },
+//    paidBy:      { 'item-0': { wewei: {raw,cur}|null, lingling: {raw,cur}|null } },
 //    edits:       { 'item-0': { notes, photos, skipped, catOverride } },
 //    customItems: [ { id, day, cat, name, sub, notes, amount, cur, who, custom } ],
 //    notes:       '備忘記事',
@@ -14,7 +15,7 @@
 const STORAGE_KEY = 'japan2026';
 
 const State = (() => {
-  let _data = { done: {}, amounts: {}, edits: {}, customItems: [], notes: '', order: {} };
+  let _data = { done: {}, amounts: {}, edits: {}, customItems: [], notes: '', order: {}, paidBy: {} };
 
   function load() {
     try {
@@ -28,6 +29,7 @@ const State = (() => {
           customItems: parsed.customItems || [],
           notes:       parsed.notes       || '',
           order:       parsed.order       || {},
+          paidBy:      parsed.paidBy      || {},
         };
       }
     } catch (e) { console.warn('state load failed', e); }
@@ -50,18 +52,16 @@ const State = (() => {
   // ── 金額 + 誰付 ────────────────────────────────────────────
   function getAmount(id)           { return _data.amounts[id] || null; }
   function setAmount(id, raw, cur, who) {
-    const existing = _data.amounts[id];
-    _data.amounts[id] = { raw: Number(raw), cur, who: who || 'both',
-      ...(existing?.paidBy ? { paidBy: existing.paidBy } : {}) };
+    _data.amounts[id] = { raw: Number(raw), cur, who: who || 'both' };
     save();
   }
 
   function getPaidBy(id) {
-    return _data.amounts[id]?.paidBy || null;
+    return _data.paidBy[id] || null;
   }
 
   function setPaidBy(id, paidBy) {
-    _data.amounts[id] = { ...(_data.amounts[id] || { raw: 0, cur: 'TWD', who: 'both' }), paidBy };
+    _data.paidBy[id] = paidBy;
     save();
   }
 
@@ -98,6 +98,7 @@ const State = (() => {
     delete _data.done[id];
     delete _data.amounts[id];
     delete _data.edits[id];
+    delete _data.paidBy[id];
     save();
   }
 
