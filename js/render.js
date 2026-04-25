@@ -275,6 +275,7 @@ function renderStats() {
   const cats = CATEGORIES;
   const byCategory = Object.fromEntries(cats.map(c => [c, 0]));
   let grand = 0, weiwei = 0, lingling = 0, both = 0;
+  let paidWewei = 0, paidLingling = 0;
 
   countable.forEach(i => {
     const twd = twdValue(i);
@@ -286,6 +287,9 @@ function renderStats() {
     if (who === 'wewei') weiwei += twd;
     else if (who === 'lingling') lingling += twd;
     else both += twd;
+    const paidBy = State.getPaidBy(i.id);
+    if (paidBy?.wewei?.raw)    paidWewei    += toTWD(paidBy.wewei.raw,    paidBy.wewei.cur);
+    if (paidBy?.lingling?.raw) paidLingling += toTWD(paidBy.lingling.raw, paidBy.lingling.cur);
   });
 
   cats.forEach(c => {
@@ -296,6 +300,8 @@ function renderStats() {
   setText('b-both',     both     ? formatTWD(both)     : '—');
   setText('b-wewei',    weiwei   ? formatTWD(weiwei)   : '—');
   setText('b-lingling', lingling ? formatTWD(lingling) : '—');
+  setText('b-paid-wewei',    paidWewei    ? formatTWD(paidWewei)    : '—');
+  setText('b-paid-lingling', paidLingling ? formatTWD(paidLingling) : '—');
   setText('stat-total', grand ? formatTWD(grand) : '—');
   setText('stat-done',  pct + '%');
   setText('stat-items', total);
