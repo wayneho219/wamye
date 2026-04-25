@@ -60,6 +60,16 @@ function whoHTML(who) {
   return `<span class="who-badge" style="background:${WHO_COLORS[who]}">${WHO_LABELS[who]}</span>`;
 }
 
+function payLabelHTML(id) {
+  const paidBy = State.getPaidBy(id);
+  if (!paidBy) return '';
+  const parts = [];
+  if (paidBy.wewei?.raw)    parts.push(`為為 ${formatTWD(toTWD(paidBy.wewei.raw,    paidBy.wewei.cur))}`);
+  if (paidBy.lingling?.raw) parts.push(`翎翎 ${formatTWD(toTWD(paidBy.lingling.raw, paidBy.lingling.cur))}`);
+  if (!parts.length) return '';
+  return `<div class="pay-label">💳 ${parts.join(' ／ ')}</div>`;
+}
+
 // ── 渲染單一卡片 ───────────────────────────────────────────────
 function renderItemCard(item) {
   const { raw, cur, who } = resolvedAmount(item);
@@ -83,6 +93,8 @@ function renderItemCard(item) {
   const deleteBtn   = item.custom
     ? `<button class="delete-btn" data-delete="${item.id}" aria-label="刪除">✕</button>`
     : '';
+  const payBtn = `<button class="pay-btn" data-pay="${item.id}" aria-label="記錄付款">💳</button>`;
+  const pLabel  = payLabelHTML(item.id);
 
   // 展開詳情區：原始連結 + 心得 + 照片
   const origNotes = item.notes ? `<p class="orig-notes">${item.notes.replace(/\n/g,'<br>')}</p>` : '';
@@ -122,11 +134,12 @@ function renderItemCard(item) {
     </div>
     <div class="item-right">
       ${amountHTML}
+      ${payBtn}
     </div>
     ${deleteBtn}
   </div>
   <div class="item-detail" id="detail-${item.id}">
-    ${origNotes}${linksHTML}${userNotes}${photosHTML}
+    ${origNotes}${linksHTML}${userNotes}${photosHTML}${pLabel}
     <button class="edit-item-btn" data-edit="${item.id}">✏ 編輯此項目</button>
   </div>
 </div>`;
@@ -222,6 +235,9 @@ function bindDayViewEvents(container) {
     // 金額編輯
     const amtBtn = e.target.closest('.amount-btn');
     if (amtBtn) { e.stopPropagation(); openAmountModal(amtBtn.dataset.id); return; }
+    // 付款記錄
+    const payBtn = e.target.closest('[data-pay]');
+    if (payBtn) { e.stopPropagation(); openPayModal(payBtn.dataset.pay); return; }
     // 新增項目
     const addBtn = e.target.closest('.add-item-btn');
     if (addBtn) { e.stopPropagation(); openAddItemModal(addBtn.dataset.day); return; }
