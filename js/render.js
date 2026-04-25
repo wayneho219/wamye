@@ -481,6 +481,12 @@ function savePayModal() {
   }
 
   State.setPaidBy(_payItemId, paidBy);
+
+  // 自動加總付款金額 → 更新項目總金額，誰的費用預設兩人
+  const totalPaid = toTWD(paidBy.wewei?.raw    || 0, paidBy.wewei?.cur    || 'TWD')
+                  + toTWD(paidBy.lingling?.raw  || 0, paidBy.lingling?.cur || 'TWD');
+  if (totalPaid > 0) State.setAmount(_payItemId, totalPaid, 'TWD', 'both');
+
   rerenderCard(_payItemId);
   renderStats();
   closePayModal();
