@@ -31,6 +31,18 @@ const State = (() => {
           order:       parsed.order       || {},
           paidBy:      parsed.paidBy      || {},
         };
+        // 遷移：清除舊版 bug 留下的 paidBy-in-amounts 格式
+        Object.keys(_data.amounts).forEach(id => {
+          const entry = _data.amounts[id];
+          if (!entry || !entry.paidBy) return;
+          if (!_data.paidBy[id]) _data.paidBy[id] = entry.paidBy;
+          const { paidBy: _pb, ...rest } = entry;
+          if (rest.raw === 0 && rest.cur === 'TWD' && rest.who === 'both') {
+            delete _data.amounts[id]; // 假紀錄，刪除以恢復預設金額
+          } else {
+            _data.amounts[id] = rest;
+          }
+        });
       }
     } catch (e) { console.warn('state load failed', e); }
   }
