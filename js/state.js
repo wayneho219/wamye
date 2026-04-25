@@ -50,7 +50,18 @@ const State = (() => {
   // ── 金額 + 誰付 ────────────────────────────────────────────
   function getAmount(id)           { return _data.amounts[id] || null; }
   function setAmount(id, raw, cur, who) {
-    _data.amounts[id] = { raw: Number(raw), cur, who: who || 'both' };
+    const existing = _data.amounts[id];
+    _data.amounts[id] = { raw: Number(raw), cur, who: who || 'both',
+      ...(existing?.paidBy ? { paidBy: existing.paidBy } : {}) };
+    save();
+  }
+
+  function getPaidBy(id) {
+    return _data.amounts[id]?.paidBy || null;
+  }
+
+  function setPaidBy(id, paidBy) {
+    _data.amounts[id] = { ...(_data.amounts[id] || { raw: 0, cur: 'TWD', who: 'both' }), paidBy };
     save();
   }
 
@@ -101,7 +112,7 @@ const State = (() => {
   return {
     load,
     isDone, toggleDone,
-    getAmount, setAmount,
+    getAmount, setAmount, getPaidBy, setPaidBy,
     getEdit, setEdit, isSkipped,
     getCustomItems, addCustomItem, updateCustomItem, deleteCustomItem,
     getNotes, setNotes,
