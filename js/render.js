@@ -60,6 +60,16 @@ function whoHTML(who) {
   return `<span class="who-badge" style="background:${WHO_COLORS[who]}">${WHO_LABELS[who]}</span>`;
 }
 
+function payLabelHTML(id) {
+  const paidBy = State.getPaidBy(id);
+  if (!paidBy) return '';
+  const parts = [];
+  if (paidBy.wewei?.raw)    parts.push(`為為 ${formatTWD(toTWD(paidBy.wewei.raw,    paidBy.wewei.cur))}`);
+  if (paidBy.lingling?.raw) parts.push(`翎翎 ${formatTWD(toTWD(paidBy.lingling.raw, paidBy.lingling.cur))}`);
+  if (!parts.length) return '';
+  return `<div class="pay-label">💳 ${parts.join(' ／ ')}</div>`;
+}
+
 // ── 渲染單一卡片 ───────────────────────────────────────────────
 function renderItemCard(item) {
   const { raw, cur, who } = resolvedAmount(item);
@@ -83,6 +93,8 @@ function renderItemCard(item) {
   const deleteBtn   = item.custom
     ? `<button class="delete-btn" data-delete="${item.id}" aria-label="刪除">✕</button>`
     : '';
+  const payBtn = `<button class="pay-btn" data-pay="${item.id}" aria-label="記錄付款">💳</button>`;
+  const pLabel  = payLabelHTML(item.id);
 
   // 展開詳情區：原始連結 + 心得 + 照片
   const origNotes = item.notes ? `<p class="orig-notes">${item.notes.replace(/\n/g,'<br>')}</p>` : '';
@@ -122,11 +134,12 @@ function renderItemCard(item) {
     </div>
     <div class="item-right">
       ${amountHTML}
+      ${payBtn}
     </div>
     ${deleteBtn}
   </div>
   <div class="item-detail" id="detail-${item.id}">
-    ${origNotes}${linksHTML}${userNotes}${photosHTML}
+    ${origNotes}${linksHTML}${userNotes}${photosHTML}${pLabel}
     <button class="edit-item-btn" data-edit="${item.id}">✏ 編輯此項目</button>
   </div>
 </div>`;
@@ -222,6 +235,9 @@ function bindDayViewEvents(container) {
     // 金額編輯
     const amtBtn = e.target.closest('.amount-btn');
     if (amtBtn) { e.stopPropagation(); openAmountModal(amtBtn.dataset.id); return; }
+    // 付款記錄
+    const payBtn = e.target.closest('[data-pay]');
+    if (payBtn) { e.stopPropagation(); openPayModal(payBtn.dataset.pay); return; }
     // 新增項目
     const addBtn = e.target.closest('.add-item-btn');
     if (addBtn) { e.stopPropagation(); openAddItemModal(addBtn.dataset.day); return; }
@@ -259,6 +275,7 @@ function renderStats() {
   const cats = CATEGORIES;
   const byCategory = Object.fromEntries(cats.map(c => [c, 0]));
   let grand = 0, weiwei = 0, lingling = 0, both = 0;
+  let paidWewei = 0, paidLingling = 0;
 
   countable.forEach(i => {
     const twd = twdValue(i);
@@ -270,6 +287,9 @@ function renderStats() {
     if (who === 'wewei') weiwei += twd;
     else if (who === 'lingling') lingling += twd;
     else both += twd;
+    const paidBy = State.getPaidBy(i.id);
+    if (paidBy?.wewei?.raw)    paidWewei    += toTWD(paidBy.wewei.raw,    paidBy.wewei.cur);
+    if (paidBy?.lingling?.raw) paidLingling += toTWD(paidBy.lingling.raw, paidBy.lingling.cur);
   });
 
   cats.forEach(c => {
@@ -280,6 +300,8 @@ function renderStats() {
   setText('b-both',     both     ? formatTWD(both)     : '—');
   setText('b-wewei',    weiwei   ? formatTWD(weiwei)   : '—');
   setText('b-lingling', lingling ? formatTWD(lingling) : '—');
+  setText('b-paid-wewei',    paidWewei    ? formatTWD(paidWewei)    : '—');
+  setText('b-paid-lingling', paidLingling ? formatTWD(paidLingling) : '—');
   setText('stat-total', grand ? formatTWD(grand) : '—');
   setText('stat-done',  pct + '%');
   setText('stat-items', total);
@@ -370,6 +392,81 @@ function saveAmountModal() {
     renderStats();
   }
   closeAmountModal();
+}
+
+// ════════════════════════════════════════════════════════════
+//  付款記錄 Modal
+// ════════════════════════════════════════════════════════════
+let _payItemId = null;
+
+function openPayModal(id) {
+  _payItemId = id;
+  const item = ITEMS.find(i => i.id === id) || State.getCustomItems().find(i => i.id === id);
+  document.getElementById('pay-modal-item-name').textContent = item?.name || '';
+
+  // Reset
+  ['wewei', 'lingling'].forEach(person => {
+    setPayCurrency(person, 'TWD');
+    document.getElementById(`pay-${person}-input`).value = '';
+    document.getElementById(`pay-${person}-hint`).style.display = 'none';
+  });
+
+  // Load existing paidBy
+  const paidBy = State.getPaidBy(id);
+  if (paidBy?.wewei?.raw) {
+    setPayCurrency('wewei', paidBy.wewei.cur);
+    document.getElementById('pay-wewei-input').value = paidBy.wewei.raw;
+    updatePayHint('wewei');
+  }
+  if (paidBy?.lingling?.raw) {
+    setPayCurrency('lingling', paidBy.lingling.cur);
+    document.getElementById('pay-lingling-input').value = paidBy.lingling.raw;
+    updatePayHint('lingling');
+  }
+
+  document.getElementById('payModal').classList.add('open');
+}
+
+function closePayModal() {
+  document.getElementById('payModal').classList.remove('open');
+  _payItemId = null;
+}
+
+function setPayCurrency(person, cur) {
+  document.getElementById(`pay-${person}-btn-twd`).classList.toggle('active', cur === 'TWD');
+  document.getElementById(`pay-${person}-btn-jpy`).classList.toggle('active', cur === 'JPY');
+  document.getElementById(`pay-${person}-prefix`).textContent  = cur === 'JPY' ? '¥' : 'NT$';
+  document.getElementById(`pay-${person}-input`).dataset.cur   = cur;
+  updatePayHint(person);
+}
+
+function updatePayHint(person) {
+  const input = document.getElementById(`pay-${person}-input`);
+  const hint  = document.getElementById(`pay-${person}-hint`);
+  const cur   = input.dataset.cur;
+  const raw   = parseFloat(input.value) || 0;
+  if (cur === 'JPY' && raw > 0) {
+    hint.textContent = `¥${raw.toLocaleString()} → NT$${Math.round(raw * JPY_TO_TWD).toLocaleString()}（匯率 5:1）`;
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+function savePayModal() {
+  if (!_payItemId) return;
+  const wRaw = parseFloat(document.getElementById('pay-wewei-input').value)    || 0;
+  const wCur = document.getElementById('pay-wewei-input').dataset.cur;
+  const lRaw = parseFloat(document.getElementById('pay-lingling-input').value) || 0;
+  const lCur = document.getElementById('pay-lingling-input').dataset.cur;
+  const paidBy = {
+    wewei:    wRaw ? { raw: wRaw, cur: wCur } : null,
+    lingling: lRaw ? { raw: lRaw, cur: lCur } : null,
+  };
+  State.setPaidBy(_payItemId, paidBy);
+  rerenderCard(_payItemId);
+  renderStats();
+  closePayModal();
 }
 
 // ════════════════════════════════════════════════════════════

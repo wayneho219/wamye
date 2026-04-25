@@ -320,6 +320,21 @@ textarea:focus { outline: none; border-color: var(--pink); }
 }
 .amount-btn.empty:active { border-color: var(--red); color: var(--red); background: var(--red-light); }
 
+/* ── 付款按鈕（卡片內） ────────────────────────────────────── */
+.pay-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 8px; font-size: .8rem;
+  cursor: pointer; color: var(--muted);
+  transition: background .1s, color .1s;
+  min-height: 28px;
+}
+.pay-btn:active { background: #f0ede8; color: var(--text); transform: scale(.96); }
+
+/* 付款標籤（item-detail 展開後顯示） */
+.pay-label {
+  font-size: .78rem; color: #666; margin-top: 4px;
+}
+
 .amt-twd  { font-size: .85rem; font-weight: 800; color: var(--red); }
 .amt-hint { font-size: .65rem; color: #b07060; font-weight: 500; }
 
