@@ -90,6 +90,19 @@ document.addEventListener('DOMContentLoaded', () => {
     handlePhotoInput(e.target);
   });
 
+  // ── 付款記錄 Modal ──────────────────────────────────────────
+  document.getElementById('pay-wewei-btn-twd')?.addEventListener('click',    () => setPayCurrency('wewei',    'TWD'));
+  document.getElementById('pay-wewei-btn-jpy')?.addEventListener('click',    () => setPayCurrency('wewei',    'JPY'));
+  document.getElementById('pay-lingling-btn-twd')?.addEventListener('click', () => setPayCurrency('lingling', 'TWD'));
+  document.getElementById('pay-lingling-btn-jpy')?.addEventListener('click', () => setPayCurrency('lingling', 'JPY'));
+  document.getElementById('pay-wewei-input')?.addEventListener('input',    () => updatePayHint('wewei'));
+  document.getElementById('pay-lingling-input')?.addEventListener('input', () => updatePayHint('lingling'));
+  document.getElementById('pay-save')?.addEventListener('click',   savePayModal);
+  document.getElementById('pay-cancel')?.addEventListener('click', closePayModal);
+  document.getElementById('payModal')?.addEventListener('click', e => {
+    if (e.target.id === 'payModal') closePayModal();
+  });
+
   // 左右滑動切換行程日
   initSwipe();
 
