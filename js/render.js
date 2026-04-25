@@ -389,6 +389,81 @@ function saveAmountModal() {
 }
 
 // ════════════════════════════════════════════════════════════
+//  付款記錄 Modal
+// ════════════════════════════════════════════════════════════
+let _payItemId = null;
+
+function openPayModal(id) {
+  _payItemId = id;
+  const item = ITEMS.find(i => i.id === id) || State.getCustomItems().find(i => i.id === id);
+  document.getElementById('pay-modal-item-name').textContent = item?.name || '';
+
+  // Reset
+  ['wewei', 'lingling'].forEach(person => {
+    setPayCurrency(person, 'TWD');
+    document.getElementById(`pay-${person}-input`).value = '';
+    document.getElementById(`pay-${person}-hint`).style.display = 'none';
+  });
+
+  // Load existing paidBy
+  const paidBy = State.getPaidBy(id);
+  if (paidBy?.wewei?.raw) {
+    setPayCurrency('wewei', paidBy.wewei.cur);
+    document.getElementById('pay-wewei-input').value = paidBy.wewei.raw;
+    updatePayHint('wewei');
+  }
+  if (paidBy?.lingling?.raw) {
+    setPayCurrency('lingling', paidBy.lingling.cur);
+    document.getElementById('pay-lingling-input').value = paidBy.lingling.raw;
+    updatePayHint('lingling');
+  }
+
+  document.getElementById('payModal').classList.add('open');
+}
+
+function closePayModal() {
+  document.getElementById('payModal').classList.remove('open');
+  _payItemId = null;
+}
+
+function setPayCurrency(person, cur) {
+  document.getElementById(`pay-${person}-btn-twd`).classList.toggle('active', cur === 'TWD');
+  document.getElementById(`pay-${person}-btn-jpy`).classList.toggle('active', cur === 'JPY');
+  document.getElementById(`pay-${person}-prefix`).textContent  = cur === 'JPY' ? '¥' : 'NT$';
+  document.getElementById(`pay-${person}-input`).dataset.cur   = cur;
+  updatePayHint(person);
+}
+
+function updatePayHint(person) {
+  const input = document.getElementById(`pay-${person}-input`);
+  const hint  = document.getElementById(`pay-${person}-hint`);
+  const cur   = input.dataset.cur;
+  const raw   = parseFloat(input.value) || 0;
+  if (cur === 'JPY' && raw > 0) {
+    hint.textContent = `¥${raw.toLocaleString()} → NT$${Math.round(raw * JPY_TO_TWD).toLocaleString()}（匯率 5:1）`;
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+function savePayModal() {
+  if (!_payItemId) return;
+  const wRaw = parseFloat(document.getElementById('pay-wewei-input').value)    || 0;
+  const wCur = document.getElementById('pay-wewei-input').dataset.cur;
+  const lRaw = parseFloat(document.getElementById('pay-lingling-input').value) || 0;
+  const lCur = document.getElementById('pay-lingling-input').dataset.cur;
+  const paidBy = {
+    wewei:    wRaw ? { raw: wRaw, cur: wCur } : null,
+    lingling: lRaw ? { raw: lRaw, cur: lCur } : null,
+  };
+  State.setPaidBy(_payItemId, paidBy);
+  rerenderCard(_payItemId);
+  renderStats();
+  closePayModal();
+}
+
+// ════════════════════════════════════════════════════════════
 //  新增項目 Modal
 // ════════════════════════════════════════════════════════════
 let _addingDay = null;
