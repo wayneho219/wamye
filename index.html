@@ -112,6 +112,23 @@
     </div>
   </div>
 
+  <!-- 付出匯總 -->
+  <div class="section-header">付出匯總</div>
+  <div class="budget-list">
+    <div class="budget-row">
+      <span class="lbl">
+        <span class="budget-dot" style="background:var(--wewei)"></span>為為付出
+      </span>
+      <span class="amt" id="b-paid-wewei">—</span>
+    </div>
+    <div class="budget-row">
+      <span class="lbl">
+        <span class="budget-dot" style="background:var(--lingling)"></span>翎翎付出
+      </span>
+      <span class="amt" id="b-paid-lingling">—</span>
+    </div>
+  </div>
+
   <!-- 每日總覽 -->
   <div class="section-header">每日總覽</div>
   <div class="day-summary-list">
@@ -375,6 +392,48 @@
     <div class="modal-actions">
       <button class="btn-cancel" id="edit-cancel">取消</button>
       <button class="btn-save"   id="edit-save">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     付款記錄 Modal
+     ================================================================ -->
+<div class="modal-overlay" id="payModal" role="dialog" aria-modal="true">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">記錄付款</div>
+    <div class="modal-item-name" id="pay-modal-item-name"></div>
+
+    <!-- 為為付 -->
+    <div class="who-label">為為付</div>
+    <div class="currency-toggle">
+      <button class="cur-btn active" id="pay-wewei-btn-twd">🇹🇼 台幣 TWD</button>
+      <button class="cur-btn" id="pay-wewei-btn-jpy">🇯🇵 日幣 JPY</button>
+    </div>
+    <div class="input-row">
+      <span class="modal-cur-prefix" id="pay-wewei-prefix">NT$</span>
+      <input type="number" id="pay-wewei-input" data-cur="TWD"
+             inputmode="decimal" placeholder="0" min="0" step="1">
+    </div>
+    <div class="modal-hint" id="pay-wewei-hint"></div>
+
+    <!-- 翎翎付 -->
+    <div class="who-label">翎翎付</div>
+    <div class="currency-toggle">
+      <button class="cur-btn active" id="pay-lingling-btn-twd">🇹🇼 台幣 TWD</button>
+      <button class="cur-btn" id="pay-lingling-btn-jpy">🇯🇵 日幣 JPY</button>
+    </div>
+    <div class="input-row">
+      <span class="modal-cur-prefix" id="pay-lingling-prefix">NT$</span>
+      <input type="number" id="pay-lingling-input" data-cur="TWD"
+             inputmode="decimal" placeholder="0" min="0" step="1">
+    </div>
+    <div class="modal-hint" id="pay-lingling-hint"></div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="pay-cancel">取消</button>
+      <button class="btn-save"   id="pay-save">儲存</button>
     </div>
   </div>
 </div>
