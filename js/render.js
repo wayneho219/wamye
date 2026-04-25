@@ -463,6 +463,23 @@ function savePayModal() {
     wewei:    wRaw ? { raw: wRaw, cur: wCur } : null,
     lingling: lRaw ? { raw: lRaw, cur: lCur } : null,
   };
+
+  // 只填一人時，自動補上另一人 = 項目總金額 - 已填金額
+  const _item = ITEMS.find(i => i.id === _payItemId) || State.getCustomItems().find(i => i.id === _payItemId);
+  if (_item) {
+    const { raw: totalRaw, cur: totalCur } = resolvedAmount(_item);
+    if (totalRaw) {
+      const totalTWD = toTWD(totalRaw, totalCur);
+      if (wRaw && !lRaw) {
+        const remainder = totalTWD - toTWD(wRaw, wCur);
+        if (remainder > 0) paidBy.lingling = { raw: remainder, cur: 'TWD' };
+      } else if (lRaw && !wRaw) {
+        const remainder = totalTWD - toTWD(lRaw, lCur);
+        if (remainder > 0) paidBy.wewei = { raw: remainder, cur: 'TWD' };
+      }
+    }
+  }
+
   State.setPaidBy(_payItemId, paidBy);
   rerenderCard(_payItemId);
   renderStats();
